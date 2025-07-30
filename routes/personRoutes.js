@@ -1,4 +1,5 @@
 const express=require('express');
+const jwt=require('jsonwebtoken');
 const router=express.Router();
 const bcrypt=require('bcrypt');
 const Person=require('./../models/Person');
@@ -32,11 +33,30 @@ router.post('/login', async(req, res)=>{
         }
         const isMatch= await bcrypt.compare(password, user.password);
         if(!isMatch) return res.status(401).json({error: 'Incorrect Password'});
-        res.status(200).json({message:'Login Succesfully', user:{username:user.username, email:user.email}});
+        const token=jwt.sign(
+            {user_id:user._id, username:user.username},
+            process.env.JWT_SECRET, 
+            {expiresIn: '1h'}
+        );
+        res.status(200).json({
+            message: 'Login Successfull',
+            token,
+    });
     }
     catch(err){
         console.log('Error Occured ', err);
         res.status(400).json({err: 'Internal Server Error'});
     }
 })
+router.get('/userDetails', async(req, res)=>{
+    try{
+        const data=await Person.find();
+        res.status(200).json(data);
+    }
+    catch(err){
+        console.log('Error Occured ', err);
+        res.status(500).json({err: 'Internal Server Error'});
+    }
+})
+
 module.exports=router;
